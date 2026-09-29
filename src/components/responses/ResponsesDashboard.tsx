@@ -897,7 +897,7 @@ export function ResponsesDashboard({ formId, scope }: { formId: string; scope: "
               />
             </div>
             <Select value={period} onValueChange={(v) => { setPeriod(v as Period); setOffset(0); }}>
-              <SelectTrigger className="h-10 w-[172px] rounded-xl" aria-label="Filtrer par période">
+              <SelectTrigger className="h-10 w-[calc(50%-4px)] rounded-xl sm:w-[172px]" aria-label="Filtrer par période">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -908,7 +908,7 @@ export function ResponsesDashboard({ formId, scope }: { formId: string; scope: "
               </SelectContent>
             </Select>
             <Select value={status || ALL} onValueChange={(v) => { setStatus(v === ALL ? "" : v); setOffset(0); }}>
-              <SelectTrigger className="h-10 w-[150px] rounded-xl" aria-label="Filtrer par statut">
+              <SelectTrigger className="h-10 w-[calc(50%-4px)] rounded-xl sm:w-[150px]" aria-label="Filtrer par statut">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -925,7 +925,7 @@ export function ResponsesDashboard({ formId, scope }: { formId: string; scope: "
                 value={memberId || ALL}
                 onValueChange={(v) => { setMemberId(v === ALL ? "" : v); setOffset(0); }}
               >
-                <SelectTrigger className="h-10 w-[172px] rounded-xl" aria-label="Filtrer par membre">
+                <SelectTrigger className="h-10 w-[calc(50%-4px)] rounded-xl sm:w-[172px]" aria-label="Filtrer par membre">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
@@ -1013,7 +1013,7 @@ export function ResponsesDashboard({ formId, scope }: { formId: string; scope: "
             }}
           >
             <SelectTrigger
-              className="h-9 w-[200px] rounded-xl bg-background"
+              className="h-9 w-[calc(50%-4px)] rounded-xl bg-background sm:w-[200px]"
               aria-label="Changer le statut des réponses sélectionnées"
             >
               <SelectValue />

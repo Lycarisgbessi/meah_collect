@@ -101,6 +101,7 @@ import {
   Clock,
   Copy,
   DoorOpen,
+  LayoutGrid,
   ExternalLink,
   Eye,
   EyeOff,
@@ -278,6 +279,7 @@ export function FormBuilder({ formId }: { formId: string }) {
   const [dirty, setDirty] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [libOpen, setLibOpen] = useState(false); // bibliothèque repliée sur mobile/tablette
   const [showPreview, setShowPreview] = useState(true);
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [search, setSearch] = useState("");
@@ -728,94 +730,113 @@ export function FormBuilder({ formId }: { formId: string }) {
         </div>
       </div>
 
-      {/* ---------- Espace de travail : bibliothèque · canevas · propriétés + aperçu ---------- */}
+      {/* ---------- Espace de travail : bibliothèque · canevas · propriétés + aperçu ----------
+           Mobile : canevas d'abord, propriétés ensuite, bibliothèque repliable en dernier. */}
       <div className="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[288px_minmax(0,1fr)] xl:grid-cols-[288px_minmax(0,1fr)_360px]">
-        {/* ===== Bibliothèque de champs (gauche) ===== */}
-        <aside aria-label="Bibliothèque de champs">
+        {/* ===== Bibliothèque de champs (gauche sur desktop) ===== */}
+        <aside aria-label="Bibliothèque de champs" className="order-3 lg:order-none">
           <Card className="rounded-2xl border-border/70">
-            <CardContent className="space-y-4 p-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Rechercher un champ…"
-                  aria-label="Rechercher dans la bibliothèque de champs"
-                  className="h-9 pl-9"
-                />
-              </div>
-
-              <nav className="max-h-[380px] space-y-4 overflow-y-auto pr-1" aria-label="Types de champs disponibles">
-                {familyGroups.map((group) => (
-                  <div key={group.family}>
-                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      {FAMILY_LABELS[group.family]}
-                    </p>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {group.entries.map((code) => (
-                        <LibraryButton key={code} entry={FIELD_CATALOG[code]} onAdd={() => addField(code)} />
-                      ))}
-                    </div>
+            <CardContent className="p-4">
+              {/* En-tête repliable (mobile/tablette uniquement) */}
+              <button
+                type="button"
+                className="mb-1 flex w-full items-center justify-between gap-2 rounded-lg py-1.5 text-left lg:hidden"
+                onClick={() => setLibOpen((o) => !o)}
+                aria-expanded={libOpen}
+                aria-controls="library-content"
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold">
+                  <LayoutGrid className="h-4 w-4 text-primary" aria-hidden="true" />
+                  Bibliothèque de champs
+                </span>
+                <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", libOpen && "rotate-180")} aria-hidden="true" />
+              </button>
+              <div className={cn(libOpen ? "block" : "hidden", "lg:block")}>
+                <div id="library-content" className="space-y-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                    <Input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Rechercher un champ…"
+                      aria-label="Rechercher dans la bibliothèque de champs"
+                      className="h-9 pl-9"
+                    />
                   </div>
-                ))}
 
-                {contentEntries.length > 0 && (
-                  <div>
-                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      {FAMILY_LABELS.content}
-                    </p>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {contentEntries.map((code) => (
-                        <LibraryButton key={code} entry={FIELD_CATALOG[code]} onAdd={() => addField(code)} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {nothingFound && (
-                  <p className="py-6 text-center text-xs text-muted-foreground">
-                    Aucun champ ne correspond à « {search} ».
-                  </p>
-                )}
-              </nav>
-
-              {/* Jeux de réponses prêts à l'emploi (Q.4) */}
-              {selectedHasChoices && selected && (
-                <div className="rounded-xl border border-border/70 bg-muted/30 p-3">
-                  <p className="flex items-center gap-1.5 text-xs font-semibold">
-                    <ListChecks className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                    Jeux de réponses prêts à l&apos;emploi
-                  </p>
-                  <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
-                    Applique un jeu standard au champ « {selected.label} » — remplace ses options actuelles.
-                  </p>
-                  <div className="mt-2 max-h-52 space-y-2.5 overflow-y-auto pr-1">
-                    {ANSWER_SET_CATEGORIES.map((cat) => (
-                      <div key={cat}>
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{cat}</p>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {ANSWER_SETS.filter((s) => s.category === cat).map((s) => (
-                            <button
-                              key={s.name}
-                              type="button"
-                              onClick={() => applyAnswerSet(s)}
-                              className="rounded-md border border-border/70 bg-background px-2 py-1 text-[11px] font-medium transition-colors hover:border-primary/50 hover:bg-primary/5"
-                            >
-                              {s.name}
-                            </button>
+                  <nav className="max-h-[380px] space-y-4 overflow-y-auto pr-1" aria-label="Types de champs disponibles">
+                    {familyGroups.map((group) => (
+                      <div key={group.family}>
+                        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          {FAMILY_LABELS[group.family]}
+                        </p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {group.entries.map((code) => (
+                            <LibraryButton key={code} entry={FIELD_CATALOG[code]} onAdd={() => addField(code)} />
                           ))}
                         </div>
                       </div>
                     ))}
-                  </div>
+
+                    {contentEntries.length > 0 && (
+                      <div>
+                        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          {FAMILY_LABELS.content}
+                        </p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {contentEntries.map((code) => (
+                            <LibraryButton key={code} entry={FIELD_CATALOG[code]} onAdd={() => addField(code)} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {nothingFound && (
+                      <p className="py-6 text-center text-xs text-muted-foreground">
+                        Aucun champ ne correspond à « {search} ».
+                      </p>
+                    )}
+                  </nav>
+
+                  {/* Jeux de réponses prêts à l'emploi (Q.4) */}
+                  {selectedHasChoices && selected && (
+                    <div className="rounded-xl border border-border/70 bg-muted/30 p-3">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold">
+                        <ListChecks className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                        Jeux de réponses prêts à l&apos;emploi
+                      </p>
+                      <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                        Applique un jeu standard au champ « {selected.label} » — remplace ses options actuelles.
+                      </p>
+                      <div className="mt-2 max-h-52 space-y-2.5 overflow-y-auto pr-1">
+                        {ANSWER_SET_CATEGORIES.map((cat) => (
+                          <div key={cat}>
+                            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{cat}</p>
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {ANSWER_SETS.filter((s) => s.category === cat).map((s) => (
+                                <button
+                                  key={s.name}
+                                  type="button"
+                                  onClick={() => applyAnswerSet(s)}
+                                  className="rounded-md border border-border/70 bg-background px-2 py-1 text-[11px] font-medium transition-colors hover:border-primary/50 hover:bg-primary/5"
+                                >
+                                  {s.name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         </aside>
 
         {/* ===== Canevas central ===== */}
-        <section aria-label="Canevas du formulaire" className="min-w-0">
+        <section aria-label="Canevas du formulaire" className="order-1 min-w-0 lg:order-none">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-display text-base font-semibold">Structure du formulaire</h2>
             <Badge variant="outline" className="text-[11px] font-normal text-muted-foreground">
@@ -862,10 +883,11 @@ export function FormBuilder({ formId }: { formId: string }) {
           )}
         </section>
 
-        {/* ===== Propriétés + aperçu en direct (droite, sticky) ===== */}
+        {/* ===== Propriétés + aperçu en direct (droite, sticky) =====
+             lg (2 colonnes) : placées sous le canevas, colonne 2 — jamais sous la bibliothèque. */}
         <aside
           aria-label="Propriétés et aperçu"
-          className="flex flex-col gap-5 pb-6 lg:sticky lg:top-[130px] lg:max-h-[calc(100vh-146px)] lg:self-start lg:overflow-y-auto lg:pr-1"
+          className="order-2 flex flex-col gap-5 pb-6 lg:order-none lg:col-start-2 lg:sticky lg:top-[130px] lg:max-h-[calc(100vh-146px)] lg:self-start lg:overflow-y-auto lg:pr-1 xl:col-start-auto"
         >
           <Card className="shrink-0 rounded-2xl border-border/70">
             <CardContent className="p-4">

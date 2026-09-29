@@ -97,10 +97,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link
             href="#"
             onClick={(e) => { e.preventDefault(); navigate({ name: "dashboard" }); }}
-            className="flex items-center gap-2.5"
+            className="flex min-w-0 items-center gap-2 sm:gap-2.5"
           >
             <BrandLogo size={36} />
-            <span className="font-display text-lg font-semibold tracking-wide">MEAH COLLECT</span>
+            <span className="font-display text-base font-semibold tracking-wide sm:text-lg">MEAH COLLECT</span>
           </Link>
 
           <nav className="ml-6 hidden items-center gap-1 md:flex" aria-label="Navigation principale">
@@ -132,7 +132,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-96 p-0">
+              <PopoverContent align="end" className="w-[calc(100vw-2rem)] p-0 sm:w-96">
                 <div className="flex items-center justify-between border-b px-4 py-3">
                   <p className="text-sm font-semibold">Notifications</p>
                   <span className="text-xs text-muted-foreground">{unreadNotifications} non lue(s)</span>

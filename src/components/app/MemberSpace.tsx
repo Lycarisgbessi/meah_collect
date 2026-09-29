@@ -163,27 +163,27 @@ export function MemberSpace({ formId }: { formId: string }) {
       </Card>
 
       {/* Indicateurs personnels (F.7) */}
-      <div className="mt-4 grid grid-cols-3 gap-3">
+      <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
         {[
           { icon: Inbox, label: "Total", value: data.stats.total },
           { icon: Clock3, label: "Aujourd'hui", value: data.stats.today },
           { icon: Users, label: "7 derniers jours", value: data.stats.last7 },
         ].map((s, i) => (
           <Card key={i} className="rounded-2xl border-border/80">
-            <CardContent className="p-4 text-center">
+            <CardContent className="p-3 text-center sm:p-4">
               <s.icon className="mx-auto h-4 w-4 text-muted-foreground" />
-              <p className="font-display mt-1.5 text-2xl font-semibold">{s.value}</p>
-              <p className="text-[11px] text-muted-foreground">{s.label}</p>
+              <p className="font-display mt-1.5 text-xl font-semibold sm:text-2xl">{s.value}</p>
+              <p className="text-[10px] leading-tight text-muted-foreground sm:text-[11px]">{s.label}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="mt-6 flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
-          D-05 : le formulaire est imposé par l'initiateur — il ne peut pas être modifié depuis cet espace.
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
+        <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+          D-05 : le formulaire est imposé par l&apos;initiateur — il ne peut pas être modifié depuis cet espace.
         </p>
-        <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={load}>
+        <Button variant="ghost" size="sm" className="h-8 shrink-0 text-xs" onClick={load}>
           <RefreshCw className="mr-1.5 h-3 w-3" /> Actualiser
         </Button>
       </div>

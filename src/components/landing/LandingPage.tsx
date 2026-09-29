@@ -248,7 +248,7 @@ export function LandingPage() {
             aria-label="MEAH COLLECT — revenir en haut de page"
           >
             <BrandLogo size={36} />
-            <span className="font-display text-lg font-semibold tracking-wide">MEAH COLLECT</span>
+            <span className="hidden font-display text-lg font-semibold tracking-wide sm:inline">MEAH COLLECT</span>
           </button>
 
           <nav aria-label="Navigation principale" className="ml-4 hidden items-center gap-7 text-sm text-muted-foreground md:flex">
@@ -267,10 +267,13 @@ export function LandingPage() {
               </Button>
             ) : (
               <>
-                <Button variant="ghost" onClick={() => goToAuth("login")}>
+                <Button variant="ghost" className="px-3 sm:px-4" onClick={() => goToAuth("login")}>
                   Se connecter
                 </Button>
-                <Button onClick={() => goToAuth("signup")}>Créer mon formulaire</Button>
+                <Button onClick={() => goToAuth("signup")}>
+                  <span className="sm:hidden">Créer</span>
+                  <span className="hidden sm:inline">Créer mon formulaire</span>
+                </Button>
               </>
             )}
           </div>

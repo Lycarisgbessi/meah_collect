@@ -137,7 +137,10 @@ export function TeamPage({ formId }: { formId: string }) {
                       {m.role === "owner" && <Badge className="ml-2 bg-primary/10 text-[10px] text-primary">Initiateur</Badge>}
                       {m.status === "disabled" && <Badge variant="destructive" className="ml-2 text-[10px]">Désactivé</Badge>}
                     </p>
-                    <p className="truncate text-xs text-muted-foreground">{m.email} · arrivé le {new Date(m.joinedAt).toLocaleDateString("fr-FR")}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {m.email}
+                      <span className="hidden sm:inline"> · arrivé le {new Date(m.joinedAt).toLocaleDateString("fr-FR")}</span>
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold">{m.submissionsCount} <span className="text-xs font-normal text-muted-foreground">réponses</span></p>

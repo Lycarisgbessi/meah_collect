@@ -767,17 +767,17 @@ function FieldControl(p: FieldRowProps) {
       const max = f.options.maxValue ?? 5;
       const n = Number(value ?? 0);
       return (
-        <div className="flex items-center gap-1.5" role="radiogroup" aria-label={f.label}>
+        <div className="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label={f.label}>
           {Array.from({ length: max }, (_, i) => i + 1).map((i) => (
             <button
               key={i}
               type="button"
-              className="flex h-12 w-12 items-center justify-center rounded-lg transition-transform duration-150 hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="flex h-11 w-11 items-center justify-center rounded-lg transition-transform duration-150 hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 sm:h-12 sm:w-12"
               onClick={() => { p.onChange(i); p.onBlur(); }}
               aria-label={`${i} sur ${max}`}
             >
               <Star
-                className="h-8 w-8 transition-colors"
+                className="h-7 w-7 transition-colors sm:h-8 sm:w-8"
                 style={i <= n ? { fill: p.accent, color: p.accent } : { fill: "transparent", color: "var(--border)" }}
               />
             </button>
@@ -794,13 +794,14 @@ function FieldControl(p: FieldRowProps) {
       const n = value === null || value === undefined || value === "" ? null : Number(value);
       return (
         <div>
-          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={f.label}>
+          {/* Mobile : grille 6 colonnes (zones tactiles pleines) · desktop : rangée flexible */}
+          <div className="grid grid-cols-6 gap-1.5 sm:flex sm:flex-wrap" role="radiogroup" aria-label={f.label}>
             {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((i) => (
               <button
                 key={i}
                 type="button"
                 className={cn(
-                  "h-12 w-12 min-w-12 rounded-xl border text-[15px] font-medium transition-all duration-150 hover:scale-105",
+                  "h-12 w-full min-w-0 rounded-xl border text-[15px] font-medium transition-all duration-150 hover:scale-105 sm:w-12 sm:min-w-12",
                   n === i ? "text-white shadow-md" : "hover:bg-muted"
                 )}
                 style={n === i ? { background: p.accent, borderColor: p.accent } : undefined}
@@ -812,9 +813,9 @@ function FieldControl(p: FieldRowProps) {
             ))}
           </div>
           {f.options.labels?.left || f.options.labels?.right ? (
-            <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-              <span>{f.options.labels?.left}</span>
-              <span>{f.options.labels?.right}</span>
+            <div className="mt-2 flex flex-wrap justify-between gap-x-6 gap-y-1 text-xs text-muted-foreground">
+              <span className="max-w-[48%]">{f.options.labels?.left}</span>
+              <span className="max-w-[48%] text-right">{f.options.labels?.right}</span>
             </div>
           ) : null}
         </div>
