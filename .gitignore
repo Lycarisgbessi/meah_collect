@@ -71,3 +71,6 @@ tool-results/
 download/
 Caddyfile
 *.pid
+
+.vercel
+.env*

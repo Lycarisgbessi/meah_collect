@@ -118,13 +118,17 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   fs.mkdirSync(EXPORT_DIR, { recursive: true });
   const fileName = `export-meah-collect-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const filePath = path.join(EXPORT_DIR, fileName);
-  fs.writeFileSync(filePath, buffer);
+  try {
+    fs.writeFileSync(filePath, buffer);
+  } catch {
+    /* disque non disponible (serverless) — le contenu en base suffit */
+  }
 
   const record = await db.export.create({
     data: {
       userId: r.user.id, formId: id, format,
       filters: JSON.stringify({ ...filters, scope }),
-      status: "ready", filePath, rowCount,
+      status: "ready", filePath, fileData: buffer.toString("base64"), rowCount,
       expiresAt: new Date(Date.now() + 24 * 3600_000),
     },
   });
@@ -248,10 +252,14 @@ async function generateAsync(exportId: string, formId: string, userId: string, f
 
     fs.mkdirSync(EXPORT_DIR, { recursive: true });
     const filePath = path.join(EXPORT_DIR, `export-${exportId}.${ext}`);
-    fs.writeFileSync(filePath, buffer);
+    try {
+      fs.writeFileSync(filePath, buffer);
+    } catch {
+      /* disque non disponible (serverless) — le contenu en base suffit */
+    }
     await db.export.update({
       where: { id: exportId },
-      data: { status: "ready", filePath, rowCount, expiresAt: new Date(Date.now() + 24 * 3600_000) },
+      data: { status: "ready", filePath, fileData: buffer.toString("base64"), rowCount, expiresAt: new Date(Date.now() + 24 * 3600_000) },
     });
     await db.notification.create({
       data: {

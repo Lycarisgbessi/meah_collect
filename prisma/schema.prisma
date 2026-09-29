@@ -188,8 +188,9 @@ model Export {
   form      Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
   format    String // xlsx | pdf | csv
   filters   String   @default("{}")
-  status    String   @default("queued") // queued|processing|ready|failed
+  status    String   @default("queued") // queued|processing|ready|failed|expired
   filePath  String?
+  fileData  String?  // contenu base64 — rendu serverless (Vercel) : le disque est éphémère
   rowCount  Int?
   error     String?
   expiresAt DateTime?
