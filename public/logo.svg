@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C9A76F"/>
+      <stop offset="0.5" stop-color="#B08D57"/>
+      <stop offset="1" stop-color="#96754a"/>
+    </linearGradient>
+  </defs>
+  <rect x="0.75" y="0.75" width="28.5" height="28.5" rx="7.5" fill="#161310"/>
+  <rect x="0.75" y="0.75" width="28.5" height="28.5" rx="7.5" fill="none" stroke="url(#gold)" stroke-width="1.1"/>
+  <text x="15" y="20.6" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="15.5" font-weight="600" fill="url(#gold)">M</text>
+</svg>

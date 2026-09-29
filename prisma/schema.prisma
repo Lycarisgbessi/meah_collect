@@ -1,0 +1,232 @@
+// ============================================================
+// Plateforme de formulaires collaboratifs à liens dérivés
+// Schéma adapté de l'Annexe C — PostgreSQL (Neon)
+// - Les enums PostgreSQL deviennent des String documentés
+// - Les jsonb sont des String (JSON sérialisé)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- PROFILS (fusion profiles + auth.users) ----------
+model User {
+  id                 String    @id @default(uuid())
+  firstName          String
+  lastName           String
+  email              String    @unique
+  passwordHash       String
+  avatarUrl          String?
+  locale             String    @default("fr")
+  timezone           String    @default("UTC")
+  role               String    @default("user") // user | admin
+  emailVerified      Boolean   @default(false)
+  verificationCode   String?
+  verificationExpiry DateTime?
+  resetToken         String?
+  resetExpiry        DateTime?
+  isSuspended        Boolean   @default(false)
+  notifyOnResponse   Boolean   @default(true)
+  notifyOnMember     Boolean   @default(true)
+  dailyDigest        Boolean   @default(false)
+  gracePeriodUntil   DateTime? // RGPD : délai de grâce avant effacement
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  ownedForms      Form[]           @relation("OwnedForms")
+  memberships     FormMember[]
+  notifications   Notification[]
+  exports         Export[]
+  auditLogs       AuditLog[]
+  createdInvites  TeamInvitation[]
+}
+
+// ---------- FORMULAIRES ----------
+model Form {
+  id               String   @id @default(uuid())
+  ownerId          String
+  owner            User     @relation("OwnedForms", fields: [ownerId], references: [id], onDelete: Restrict)
+  title            String
+  description      String?
+  theme            String   @default("{}") // {accent, logoUrl, bannerUrl, font, mode}
+  settings         String   @default("{}") // {closesAt,maxSubmissions,dedup{keys,mode},finalMessage,redirectUrl,consentText,showBranding,allowAnother,notifyMember,notifyOwner,estimateMinutes}
+  mode             String   @default("standard") // standard|survey|quiz|registration|application|feedback|anonymous
+  displayMode      String   @default("single_page") // single_page|multi_step
+  status           String   @default("draft") // draft|published|closed|archived
+  currentVersionId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  versions     FormVersion[]
+  members      FormMember[]
+  links        CollectionLink[]
+  submissions  Submission[]
+  invitations  TeamInvitation[]
+  exports      Export[]
+  abuseReports AbuseReport[]
+
+  @@index([ownerId, status])
+}
+
+model FormVersion {
+  id            String   @id @default(uuid())
+  formId        String
+  form          Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  versionNumber Int
+  isPublished   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  fields      FormField[]
+  submissions Submission[]
+
+  @@unique([formId, versionNumber])
+}
+
+model FormField {
+  id         String      @id @default(uuid())
+  versionId  String
+  version    FormVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  key        String
+  label      String
+  type       String // catalogue Annexe Q.3 (types 🟢 v1)
+  isRequired Boolean     @default(false)
+  position   Int
+  options    String      @default("{}") // JSON options propres au type
+
+  @@unique([versionId, key])
+  @@index([versionId, position])
+}
+
+// ---------- ÉQUIPE ----------
+model TeamInvitation {
+  id        String    @id @default(uuid())
+  formId    String
+  form      Form      @relation(fields: [formId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  createdBy String?
+  expiresAt DateTime?
+  maxUses   Int?
+  usesCount Int       @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  creator User?        @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  members FormMember[]
+}
+
+model FormMember {
+  id           String    @id @default(uuid())
+  formId       String
+  form         Form      @relation(fields: [formId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitationId String?
+  invitation   TeamInvitation? @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+  role         String    @default("member") // owner | member
+  status       String    @default("active") // active | disabled | removed
+  joinedAt     DateTime  @default(now())
+
+  link        CollectionLink?
+  submissions Submission[]
+
+  @@unique([formId, userId])
+  @@index([userId])
+}
+
+// collection_links (liens dérivés — inclut celui de l'initiateur)
+model CollectionLink {
+  id        String   @id @default(uuid())
+  formId    String
+  form      Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  memberId  String   @unique
+  member    FormMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  submissions Submission[]
+
+  @@unique([formId, memberId])
+}
+
+// ---------- SOUMISSIONS ----------
+model Submission {
+  id           String    @id @default(uuid())
+  formId       String
+  form         Form      @relation(fields: [formId], references: [id], onDelete: Cascade)
+  versionId    String
+  version      FormVersion @relation(fields: [versionId], references: [id])
+  linkId       String
+  link         CollectionLink @relation(fields: [linkId], references: [id])
+  memberId     String
+  member       FormMember @relation(fields: [memberId], references: [id])
+  answers      String // JSON {fieldKey: valeur} — voir Annexe Q.9.3
+  leadStatus   String    @default("new") // new|contacted|qualified|converted|lost
+  internalNote String?
+  isFlagged    Boolean   @default(false)
+  ipHash       String?
+  userAgent    String?
+  durationSec  Int?
+  submittedAt  DateTime  @default(now())
+  deletedAt    DateTime?
+
+  @@index([formId, submittedAt])
+  @@index([memberId, submittedAt])
+}
+
+// ---------- ANNEXES ----------
+model Export {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  formId    String
+  form      Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  format    String // xlsx | pdf | csv
+  filters   String   @default("{}")
+  status    String   @default("queued") // queued|processing|ready|failed
+  filePath  String?
+  rowCount  Int?
+  error     String?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  metadata  String   @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // member_joined | new_submission | export_ready | quota_warning
+  payload   String    @default("{}")
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+model AbuseReport {
+  id              String   @id @default(uuid())
+  formId          String
+  form            Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  reason          String
+  reporterIpHash  String?
+  status          String   @default("open") // open|reviewed|resolved
+  createdAt       DateTime @default(now())
+}
