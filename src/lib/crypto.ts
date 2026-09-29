@@ -11,17 +11,36 @@ import crypto from "crypto";
 const DEV_SECRET = "meah-collect-dev-secret-change-me-in-production-9f2c";
 const DEV_IP_SALT = "meah-collect-ip-salt-2026-dev";
 
+/**
+ * Secret résolu À LA DEMANDE (jamais à l'import) : le build de Next.js évalue
+ * les modules des routes API sans variables d'environnement — la vérification
+ * stricte ne doit s'exécuter qu'au traitement réel d'une requête (runtime).
+ */
+const secretCache = new Map<string, string>();
 function requiredSecret(name: string, devValue: string): string {
+  const cached = secretCache.get(name);
+  if (cached) return cached;
   const v = process.env[name];
-  if (v && v.length >= 16) return v;
+  if (v && v.length >= 16) {
+    secretCache.set(name, v);
+    return v;
+  }
+  // Skip des étapes de build (collecte de données de page, instrumentation) :
+  // aucun secret n'y est utilisé, tout doit pouvoir s'importer sans planter.
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return devValue;
+  }
   if (process.env.NODE_ENV === "production") {
-    throw new Error(`[config] ${name} est manquant ou trop court (≥ 16 caractères) — refus de démarrer en production.`);
+    throw new Error(`[config] ${name} est manquant ou trop court (≥ 16 caractères) — configuration serveur invalide.`);
   }
   if (!v) console.warn(`[config] ${name} absent — valeur de DÉVELOPPEMENT utilisée (interdit en production).`);
+  secretCache.set(name, devValue);
   return devValue;
 }
 
-const SECRET = requiredSecret("AUTH_SECRET", DEV_SECRET);
+function authSecret(): string {
+  return requiredSecret("AUTH_SECRET", DEV_SECRET);
+}
 
 // ---------- Mots de passe (scrypt) ----------
 export function hashPassword(password: string): string {
@@ -97,7 +116,7 @@ export interface SessionPayload {
 
 /** Empreinte courte du hash de mot de passe (version de session). */
 export function sessionPv(passwordHash: string): string {
-  return crypto.createHmac("sha256", SECRET).update(`pv:${passwordHash}`).digest("hex").slice(0, 16);
+  return crypto.createHmac("sha256", authSecret()).update(`pv:${passwordHash}`).digest("hex").slice(0, 16);
 }
 
 export function signSession(uid: string, pwdHash: string, ttlDays = 30): string {
@@ -107,7 +126,7 @@ export function signSession(uid: string, pwdHash: string, ttlDays = 30): string 
     pv: sessionPv(pwdHash),
   };
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const sig = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
+  const sig = crypto.createHmac("sha256", authSecret()).update(body).digest("base64url");
   return `${body}.${sig}`;
 }
 
@@ -115,7 +134,7 @@ export function verifySession(token: string | undefined): SessionPayload | null 
   if (!token) return null;
   const [body, sig] = token.split(".");
   if (!body || !sig) return null;
-  const expected = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
+  const expected = crypto.createHmac("sha256", authSecret()).update(body).digest("base64url");
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
@@ -129,8 +148,6 @@ export function verifySession(token: string | undefined): SessionPayload | null 
 }
 
 // ---------- Hachage IP (RGPD : jamais d'IP en clair) ----------
-const IP_SALT = requiredSecret("IP_SALT", DEV_IP_SALT);
-
 export function hashIp(ip: string): string {
-  return crypto.createHmac("sha256", IP_SALT).update(ip).digest("hex").slice(0, 32);
+  return crypto.createHmac("sha256", requiredSecret("IP_SALT", DEV_IP_SALT)).update(ip).digest("hex").slice(0, 32);
 }
