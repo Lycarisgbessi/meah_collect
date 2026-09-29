@@ -74,3 +74,4 @@ Caddyfile
 
 .vercel
 .env*
+.vercel
